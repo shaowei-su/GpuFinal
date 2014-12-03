@@ -4,20 +4,25 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace cv;
 
 
 int M;  // number of rows in image
 int N;  // number of columns in image
+int numBox;
+int boxSize;
 
 int main(int argc, char *argv[]){
 
 
-	if( argc != 3) {
-		printf("Usage: input format: <image filename><csv filename>\n");
+	if( argc != 4) {
+		printf("Usage: input format: <image filename><csv filename><Box size>\n");
+		printf("box size should be 2, 4 or 8\n");
 		exit(EXIT_FAILURE);
 	}
+
 
 	Mat image;
 	image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
@@ -30,12 +35,15 @@ int main(int argc, char *argv[]){
 	// Set up global variables based on image size:
 	M = image.rows;
 	N = image.cols;
+	boxSize = atoi(argv[3]);
+	numBox = pow(M / boxSize, 2);
 
+	printf("here the image[0] = %d\n", image.data[0] );
 
     char buffer[1024] ;
     char *record,*line;
     int i=0,j=0;
-    long long csvMat[16384][2];
+    long long csvMat[numBox][2];
 
     FILE *fstream = fopen(argv[2],"r");
     if(fstream == NULL)
