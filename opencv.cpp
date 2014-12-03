@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
     char buffer[1024] ;
     char *record,*line;
     int i=0,j=0;
-    long long csvMat[128][128];
+    long long csvMat[16384][2];
 
     FILE *fstream = fopen(argv[2],"r");
     if(fstream == NULL)
