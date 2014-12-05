@@ -14,6 +14,31 @@ int N;  // number of columns in image
 int numBox;
 int boxSize;
 
+
+//decimal to binary function
+//the decimal is the number that would to tranform
+//bits_size is how many binary bits that would to transform
+//*binary is the array to store the binary bits
+void decimal_to_binary(int decimal, int bits_size, int *binary){
+	int digit;
+	int n=bits_size-1;
+	  for (bits_size=n; bits_size >= 0; bits_size--)
+	  {
+	    digit = decimal >> bits_size;// csv_number is the number
+	 
+	    if (digit & 1){
+
+		  binary[n-bits_size]=1;
+		}
+
+	    else{
+
+		  binary[n-bits_size]=0;
+		}
+	  }			
+}
+
+
 int main(int argc, char *argv[]){
 
 
