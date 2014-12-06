@@ -125,7 +125,7 @@ int main(int argc, char *argv[]){
 	N = image.cols;
 	boxSize = atoi(argv[3]);
 	numBox = pow(M / boxSize, 2);
-	box_col= M/boxSize;
+	box_col= M/boxSize;// how many box in one col
 
 
 	row_xor = (int*) malloc(M*sizeof(int));
@@ -190,15 +190,15 @@ int main(int argc, char *argv[]){
 
    int result_xor;// this is to store the final xor of each column and row
 ///////////////////////////////////////
-   
-
+    for(int box_index=0;box_index<box_col;box_index++){
+   		for(int box_col=0;box_col<boxSize;box_col++){
    			int present_row=0;
 
    			for(int j=0;j<box_col;j++){
    	   			int result=0;
    				decimal_to_binary(csvMat[j][2],bits_size,binary);
-   				for(int i=0;i<8;i++){
-   					result=result+binary[i]*pow(2,7-i)
+   				for(int i=0+8*present_row;i<8+8*present_row;i++){
+   					result=result+binary[i-8*present_row]*pow(2,7-i-8*present_row)
    				}
    				result_matrix[j]=result;
    			}
@@ -213,6 +213,9 @@ int main(int argc, char *argv[]){
    					break;
    				}
    			}
+   			present_row++;
+   		}
+   	}		
 
 //////////////
 
