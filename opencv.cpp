@@ -55,8 +55,16 @@ void swap_row(int present_row, int target_row,int *p, int M){
 		p[present_row*M+i]=p[target_row*M+i];
 		p[target_row*M+i]=temp;
 	}	
+}	
 
-
+void swap_column(int present_column, int target_column,int *p, int N){
+	int i=0;
+	int temp;
+	for(i;i<N;i++){
+		temp=p[present_column*N+i];
+		p[present_column*N+i]=p[target_column*M+i];
+		p[present_column*N+i]=temp;
+	}	
 }	
 
 int *rowXOR(uchar *p, int M){
@@ -189,23 +197,27 @@ int main(int argc, char *argv[]){
    if(result_matrix == NULL){ printf("Fail to melloc result_matrix\n\n"); exit(EXIT_FAILURE); }
 
    int result_xor;// this is to store the final xor of each column and row
-///////////////////////////////////////
-    for(int box_index=0;box_index<box_col;box_index++){
-   		for(int box_col=0;box_col<boxSize;box_col++){
-   			int present_row=0;
 
-   			for(int j=0;j<box_col;j++){
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////this is the re-swap of the row//////////////////////////////////////////////   
+     for(int box_index=0;box_index<box_col;box_index++){// for all the box in the image
+   		
+   		for(int present_row=0;present_row<boxSize;present_row++){// for the one box, which has bits_size rows and cols
+
+   			for(int j=0+box_index*box_col;j<box_col+box_index*box_col;j++){// for every box to calculate the binary and then decimal
    	   			int result=0;
-   				decimal_to_binary(csvMat[j][2],bits_size,binary);
-   				for(int i=0+8*present_row;i<8+8*present_row;i++){
-   					result=result+binary[i-8*present_row]*pow(2,7-i-8*present_row)
+   				decimal_to_binary(csvMat[j+box_index*64][1],bits_size,binary);
+
+   				for(int i=0+8*present_row;i<8+8*present_row;i++){//change the binary to the decimal to XOR
+   					result=result+binary[i]*pow(2,7-i-8*present_row)
    				}
-   				result_matrix[j]=result;
+   				result_matrix[j]=result;//store every decimal into the matrix
    			}
+
    			for(int i=0;i<box_col-1;i++){
-   	   			result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];
+   	   			result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decial of the row or column
    			}
-   			result_xor = result_matrix[box_col-1];
+   			result_xor = result_matrix[box_col-1];//get the last one, which is the final result of the XOR
 
    			for(int i=present_row;i<M;i++){//swap from this line
    				if(result_xor==row_xor[i]){// if find the targets, then swap
@@ -213,12 +225,41 @@ int main(int argc, char *argv[]){
    					break;
    				}
    			}
-   			present_row++;
    		}
-   	}		
+   	}
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////this is the re-swap of the column/////////////////////////////////////////// 
+     for(int box_index=0;box_index<box_col;box_index++){// for all the box in the image
+   		
+   		for(int present_column=0;present_column<boxSize;present_column++){// for the one box, which has bits_size rows and cols
 
-//////////////
+   			for(int j=0+box_index*box_col;j<box_col+box_index*box_col;j++){// for every box to calculate the binary and then decimal
+   	   			int result=0;
+   				decimal_to_binary(csvMat[j+box_index*64][0],bits_size,binary);
 
+   				for(int i=0+8*present_column;i<8+8*present_column;i++){//change the binary to the decimal to XOR
+   					result=result+binary[i]*pow(2,7-i-8*present_column)
+   				}
+   				result_matrix[j]=result;//store every decimal into the matrix
+   			}
+
+   			for(int i=0;i<box_col-1;i++){
+   	   			result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decial of the row or column
+   			}
+   			result_xor = result_matrix[box_col-1];//get the last one, which is the final result of the XOR
+
+   			for(int i=present_column;i<N;i++){//swap from this line
+   				if(result_xor==row_xor[i]){// if find the targets, then swap
+   					swap_column(present_column,i, p, N);
+   					break;
+   				}
+   			}
+   		}
+   	}   	
+
+////////////////////////////
+
+   	image.data=p; // output the new image data
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, image.data);
 	// and save it to disk:
