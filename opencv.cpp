@@ -14,6 +14,35 @@ int N;  // number of columns in image
 int numBox;
 int boxSize;
 
+//decimal to binary function
+//the decimal is the number that would to tranform
+//bits_size is how many binary bits that would to transform
+//*binary is the array to store the binary bits
+void decimal_to_binary(int decimal, int bits_size, int *binary){
+	int digit;
+	int n=bits_size-1;
+	  for (bits_size=n; bits_size >= 0; bits_size--)
+	  {
+	    digit = decimal >> bits_size;// csv_number is the number
+	 
+	    if (digit & 1){
+
+		  binary[n-bits_size]=1;
+		}
+
+	    else{
+
+		  binary[n-bits_size]=0;
+		}
+	  }			
+}
+////////////////////////////////
+void binary_to_decimal(int bits_size,int *binary){
+	for
+
+
+}
+
 int *rowXOR(uchar *p, int M){
 
 	int i, j;
@@ -117,6 +146,23 @@ int main(int argc, char *argv[]){
       	}
       	++i ;
    }
+
+ ///////////////////////////////////////////
+//this is the transform of the decimal number to binary
+   int bits_size;
+   if(boxSize==2){
+   		bits_size=16;
+   }
+   else if(boxSize==4){
+   		bits_size=32;
+   }
+   else if(boxSize==8){
+   		bits_size=64;
+   }
+   int binary[bits_size];
+///////////////////////////////////////
+
+//////////////
 
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, image.data);

@@ -14,7 +14,6 @@ int N;  // number of columns in image
 int numBox;
 int boxSize;
 
-
 //decimal to binary function
 //the decimal is the number that would to tranform
 //bits_size is how many binary bits that would to transform
@@ -37,17 +36,20 @@ void decimal_to_binary(int decimal, int bits_size, int *binary){
 		}
 	  }			
 }
+////////////////////////////////
+void binary_to_decimal(int bits_size,int *binary){
+	for
 
+
+}
 
 int main(int argc, char *argv[]){
-
 
 	if( argc != 4) {
 		printf("Usage: input format: <image filename><csv filename><Box size>\n");
 		printf("box size should be 2, 4 or 8\n");
 		exit(EXIT_FAILURE);
 	}
-
 
 	Mat image;
 	image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
@@ -89,8 +91,20 @@ int main(int argc, char *argv[]){
       	}
       	++i ;
    }
-//////////////
-
+///////////////////////////////////////////
+//this is the transform of the decimal number to binary
+   int bits_size;
+   if(boxSize==2){
+   		bits_size=16;
+   }
+   else if(boxSize==4){
+   		bits_size=32;
+   }
+   else if(boxSize==8){
+   		bits_size=64;
+   }
+   int binary[bits_size];
+///////////////////////////////////////
 
 //////////////
 	// Display the output image:
