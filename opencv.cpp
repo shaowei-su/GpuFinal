@@ -47,6 +47,18 @@ void decimal_to_binary(int decimal, int bits_size, int *binary){
 	return result;
 }*/
 
+void swap_row(int present_row, int target_row,int *p, int M){
+	int i=0;
+	int temp;
+	for(i;i<M;i++){
+		temp=p[present_row*M+i];
+		p[present_row*M+i]=p[target_row*M+i];
+		p[target_row*M+i]=temp;
+	}	
+
+
+}	
+
 int *rowXOR(uchar *p, int M){
 
 	int i, j;
@@ -168,30 +180,39 @@ int main(int argc, char *argv[]){
    		bits_size=64;
    }*/
    int *binary;
-   int *result_matrix;		
-   binary = (int*) malloc(bits_size*sizeof(int));
-   result_matrix= (int*) malloc(box_col*sizeof(int));
-   int result_xor;
+   int *result_matrix;	
+
+   binary = (int*) malloc(bits_size*sizeof(int));// this is to store the binary of the box 
+   if(binary == NULL){ printf("Fail to melloc binary\n\n"); exit(EXIT_FAILURE); }
+
+   result_matrix= (int*) malloc(box_col*sizeof(int));// this is to store the decimal which is transformed from the 8 digits
+   if(result_matrix == NULL){ printf("Fail to melloc result_matrix\n\n"); exit(EXIT_FAILURE); }
+
+   int result_xor;// this is to store the final xor of each column and row
 ///////////////////////////////////////
+   
 
-   for(int j=0;j<box_col;j++){
-   	   int result=0;
-   		decimal_to_binary(csvMat[j][2],bits_size,binary);
-   		for(int i=0;i<8;i++){
-   			result=result+binary[i]*pow(2,7-i)
-   		}
-   		result_matrix[j]=result;
-   }
-   for(int i=0;i<box_col-1;i++){
-   	   result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];
-   }
-   result_xor = result_matrix[box_col-1];
+   			int present_row=0;
 
-   for(int i=0;i<M;i++){//swap from this line
-   		if(result_xor==row_xor[i]){
+   			for(int j=0;j<box_col;j++){
+   	   			int result=0;
+   				decimal_to_binary(csvMat[j][2],bits_size,binary);
+   				for(int i=0;i<8;i++){
+   					result=result+binary[i]*pow(2,7-i)
+   				}
+   				result_matrix[j]=result;
+   			}
+   			for(int i=0;i<box_col-1;i++){
+   	   			result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];
+   			}
+   			result_xor = result_matrix[box_col-1];
 
-   		}
-   }
+   			for(int i=present_row;i<M;i++){//swap from this line
+   				if(result_xor==row_xor[i]){// if find the targets, then swap
+   					swap_row(present_row,i, p, M);
+   					break;
+   				}
+   			}
 
 //////////////
 
