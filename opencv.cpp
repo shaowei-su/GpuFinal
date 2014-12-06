@@ -13,6 +13,7 @@ int M;  // number of rows in image
 int N;  // number of columns in image
 int numBox;
 int boxSize;
+int box_col; // equals to the box_row
 
 //decimal to binary function
 //the decimal is the number that would to tranform
@@ -37,11 +38,14 @@ void decimal_to_binary(int decimal, int bits_size, int *binary){
 	  }			
 }
 ////////////////////////////////
-void binary_to_decimal(int bits_size,int *binary){
-	for
-
-
-}
+/*int binary_to_decimal(int bits_size,int *binary){
+	int i=0;
+	int result=0;
+	for(i;i<bits_size;i++){
+		result=result+binary[i]*pow(2,i);
+	}
+	return result;
+}*/
 
 int *rowXOR(uchar *p, int M){
 
@@ -109,6 +113,8 @@ int main(int argc, char *argv[]){
 	N = image.cols;
 	boxSize = atoi(argv[3]);
 	numBox = pow(M / boxSize, 2);
+	box_col= M/boxSize;
+
 
 	row_xor = (int*) malloc(M*sizeof(int));
 	if(row_xor == NULL){ printf("Fail to melloc \n\n"); exit(EXIT_FAILURE); }
@@ -150,6 +156,8 @@ int main(int argc, char *argv[]){
  ///////////////////////////////////////////
 //this is the transform of the decimal number to binary
    int bits_size;
+   bits_size=boxSize*8;
+   /* this is the comment of the above line
    if(boxSize==2){
    		bits_size=16;
    }
@@ -158,9 +166,32 @@ int main(int argc, char *argv[]){
    }
    else if(boxSize==8){
    		bits_size=64;
-   }
-   int binary[bits_size];
+   }*/
+   int *binary;
+   int *result_matrix;		
+   binary = (int*) malloc(bits_size*sizeof(int));
+   result_matrix= (int*) malloc(box_col*sizeof(int));
+   int result_xor;
 ///////////////////////////////////////
+
+   for(int j=0;j<box_col;j++){
+   	   int result=0;
+   		decimal_to_binary(csvMat[j][2],bits_size,binary);
+   		for(int i=0;i<8;i++){
+   			result=result+binary[i]*pow(2,7-i)
+   		}
+   		result_matrix[j]=result;
+   }
+   for(int i=0;i<box_col-1;i++){
+   	   result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];
+   }
+   result_xor = result_matrix[box_col-1];
+
+   for(int i=0;i<M;i++){//swap from this line
+   		if(result_xor==row_xor[i]){
+
+   		}
+   }
 
 //////////////
 
