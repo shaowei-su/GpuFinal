@@ -67,10 +67,10 @@ void swap_column(int present_column, int target_column,uchar *p, int N){
 	}	
 }	
 
-void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,long long *result_matrix,int bits_size){
+void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
-			//printf("decimal to binary: %lld\n",csvMat[i*2+1+x*box_col*2]);
+			//printf("row decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+1+x*box_col*2]);
 			decimal_to_binary(csvMat[i*2+1+x*box_col*2],bits_size,binary);
 			for(int k=0;k<boxSize;k++){
 				int result=0;
@@ -79,15 +79,16 @@ void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,l
    					//printf("result is:%d\n",result);
    				}
    				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
-   				//printf("checkbox row result %d: result_matrix[%d] = %lld\n",x*256+8*i+k,k*box_col+i+boxSize*x*box_col,result_matrix[k*box_col+i+4*x*box_col]);
+   				printf("checkbox row result %d: result_matrix[%d] = %d\n",x*256+8*i+k,k*box_col+i+boxSize*x*box_col,result_matrix[k*box_col+i+boxSize*x*box_col]);
    			}
 		}
 	}	
 }
 
-void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binary,long long *result_matrix,int bits_size){
+void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
+			//printf("col decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+x*box_col*2]);
 			decimal_to_binary(csvMat[i*2+x*box_col*2],bits_size,binary);//i*2+x*box_col*2//x*2+i*box_col*2
 			for(int k=0;k<boxSize;k++){
 				int result=0;
@@ -95,13 +96,13 @@ void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binar
    					result=result+binary[z+k*8]*pow(2,7-z);
    				}
    				result_matrix[i*box_col*boxSize+x+k*box_col]=result;//i*box_col*boxSize+x+k*box_col//k*box_col+i+boxSize*x*box_col
-   				//printf("checkbox column result %d: %lld\n",x*256+boxSize*i+k,result_matrix[k*box_col+i+4*x*box_col]);
+   				//printf("checkbox column result %d: %d\n",x*256+boxSize*i+k,result_matrix[k*box_col+i+boxSize*x*box_col]);
    			}
 		}
 	}	
 }
 
-void get_xor(long long *result_xor,long long *result_matrix,int box_col, int M){
+void get_xor(int *result_xor,int *result_matrix,int box_col, int M){
 	for(int j=0;j<M;j++){
    		for(int i=0+j*box_col;i<box_col-1+j*box_col;i++){
    	   		result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decimal of the row or column
@@ -189,8 +190,8 @@ int main(int argc, char *argv[]){
 	uchar *p = image.data;
 	row_xor = rowXOR(p, M);
 	col_xor = colXOR(p, M);
-	for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
+	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
+	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
 
     char buffer[1024] ;
     char *record,*line;
@@ -242,28 +243,33 @@ int main(int argc, char *argv[]){
    		bits_size=64;
    }*/
    int *binary;
-   long long*result_matrix;	
-   long long*result_xor;
+   int *result_matrix;	
+   int *result_xor;
 
    binary = (int*) malloc(bits_size*sizeof(int));// this is to store the binary of the box 
    if(binary == NULL){ printf("Fail to melloc binary\n\n"); exit(EXIT_FAILURE); }
 
-   result_matrix= (long long*) malloc(M*box_col*sizeof(long long));// this is to store the decimal which is transformed from the 8 digits
+   result_matrix= (int*) malloc(M*box_col*sizeof(int));// this is to store the decimal which is transformed from the 8 digits
    if(result_matrix == NULL){ printf("Fail to melloc result_matrix\n\n"); exit(EXIT_FAILURE); }
+   printf("%d\n",M*box_col);
 
-   result_xor= (long long*) malloc(M*sizeof(long long));
+   result_xor= (int*) malloc(M*sizeof(int));
    if(result_xor == NULL){ printf("Fail to melloc result_xor\n\n"); exit(EXIT_FAILURE); }
 
 
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
    checkbox_binary_row(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
+   printf("it is right\n");
    get_xor(result_xor,result_matrix,box_col,M);
+   int flag1=0;
+   int flag2=0;
    	for(int j=0;j<N;j++){
    		for(int i=j;i<M;i++){//swap from this line
    			if(result_xor[j]==row_xor[i]){// if find the targets, then swap
+   				flag1++;
    				swap_row(j,i, p, M);
-   				//printf("has swaped column %d and %d and the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
+   				//printf("has swaped column %d and %d and the result_xor is %d the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
    				break;
    			}
    		}
@@ -275,12 +281,14 @@ int main(int argc, char *argv[]){
    	for(int j=0;j<N;j++){
    		for(int i=j;i<M;i++){//swap from this line
    			if(result_xor[j]==col_xor[i]){// if find the targets, then swap
+   				flag2++;
    				swap_column(j,i, p, M);
-   				//printf("has swaped row %d and %dand the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
+   				//printf("has swaped row %d and %dand the result_xor is %d the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
    				break;
    			}
    		}
    	}	
+   	printf("%d, %d \n",flag1,flag2);
 	
 
 ////////////////////////////
