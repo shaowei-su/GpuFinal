@@ -19,7 +19,7 @@ int box_col; // equals to the box_row
 //the decimal is the number that would to tranform
 //bits_size is how many binary bits that would to transform
 //*binary is the array to store the binary bits
-void decimal_to_binary(int decimal, int bits_size, int *binary){
+void decimal_to_binary(long long decimal, int bits_size, int *binary){
 	int digit;
 	int n=bits_size-1;
 	  for (bits_size=n; bits_size >= 0; bits_size--)
@@ -27,13 +27,13 @@ void decimal_to_binary(int decimal, int bits_size, int *binary){
 	    digit = decimal >> bits_size;// csv_number is the number
 	 
 	    if (digit & 1){
-
 		  binary[n-bits_size]=1;
+		  //printf("%d",1);
 		}
 
 	    else{
-
 		  binary[n-bits_size]=0;
+		  //printf("%d",0);
 		}
 	  }			
 }
@@ -70,14 +70,16 @@ void swap_column(int present_column, int target_column,uchar *p, int N){
 void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,long long *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
+			printf("decimal to binary: %lld\n",csvMat[i*2+1+x*box_col*2]);
 			decimal_to_binary(csvMat[i*2+1+x*box_col*2],bits_size,binary);
 			for(int k=0;k<boxSize;k++){
 				int result=0;
 				for(int z=0;z<8;z++){//change the binary to the decimal to XOR
    					result=result+binary[z+k*8]*pow(2,7-z);
+   					printf("result is:%d\n",result);
    				}
    				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
-   				printf("checkbox row result%d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
+   				printf("checkbox row result %d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
    			}
 		}
 	}	
