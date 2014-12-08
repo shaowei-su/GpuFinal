@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -11,7 +10,6 @@
 //#include <inttypes.h>
 
 using namespace cv;
-
 
 int M;  // number of rows in image
 int N;  // number of columns in image
@@ -271,7 +269,6 @@ int main(int argc, char *argv[]){
    for(int i=0;i<256;i++){
    		swap[i]=0;
    }
-
    	for(int j=0;j<N;j++){
    		for(int i=0;i<M;i++){//swap from this line
    			if(result_xor[j]==row_xor[i] && swap[i]==0){// if find the targets, then swap	
