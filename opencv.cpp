@@ -5,6 +5,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
+#include <iostream>
+#include <sstream>
+//#include <inttypes.h>
 
 using namespace cv;
 
@@ -19,7 +23,7 @@ int box_col; // equals to the box_row
 //the decimal is the number that would to tranform
 //bits_size is how many binary bits that would to transform
 //*binary is the array to store the binary bits
-void decimal_to_binary(long long decimal, int bits_size, int *binary){
+void decimal_to_binary(uint64_t decimal, int bits_size, int *binary){
 	int digit;
 	int n=bits_size-1;
 	  for (bits_size=n; bits_size >= 0; bits_size--)
@@ -28,12 +32,10 @@ void decimal_to_binary(long long decimal, int bits_size, int *binary){
 	 
 	    if (digit & 1){
 		  binary[n-bits_size]=1;
-		  //printf("%d",1);
 		}
 
 	    else{
 		  binary[n-bits_size]=0;
-		  //printf("%d",0);
 		}
 	  }			
 }
@@ -67,7 +69,7 @@ void swap_column(int present_column, int target_column,uchar *p, int N){
 	}	
 }	
 
-void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
+void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
 			//printf("row decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+1+x*box_col*2]);
@@ -85,7 +87,7 @@ void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,i
 	}	
 }
 
-void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
+void checkbox_binary_column(uint64_t *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
 			//printf("col decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+x*box_col*2]);
@@ -106,10 +108,10 @@ void get_xor(int *result_xor,int *result_matrix,int box_col, int M){
 	for(int j=0;j<M;j++){
    		for(int i=0+j*box_col;i<box_col-1+j*box_col;i++){
    	   		result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decimal of the row or column
-   	   		//printf("result_matrix %d is %lld\n",i+1,result_matrix[i+1]);
+   	   		//printf("result_matrix %d is %d\n",i+1,result_matrix[i+1]);
    		}
    		result_xor[j] = result_matrix[box_col-1+j*box_col];//get the last one, which is the final result of the XOR
-   		//printf("xor of the row or column %d is %lld\n",j,result_xor[j]);	
+   		//printf("xor of the row or column %d is %d\n",j,result_xor[j]);	
    	}	
 }
 
@@ -197,8 +199,8 @@ int main(int argc, char *argv[]){
     char *record,*line;
     i = 0;
     j = 0;
-    long long csvmat_read[numBox][2];
-    long long csvMat[numBox*2];
+    uint64_t csvmat_read[numBox][2];
+    uint64_t csvMat[numBox*2];
 
 /////////////////checkbox load/////////////////////////////////////////
     FILE *fstream = fopen(argv[2],"r");
@@ -213,7 +215,7 @@ int main(int argc, char *argv[]){
       	record = strtok(line,",");
       	while(record != NULL)
       	{ 
-      		csvmat_read[i][j] = atoll(record) ;
+      		csvmat_read[i][j] = strtoull(record,0,0) ;
       		//printf("record : %lld at %d, %d \n", csvmat_read[i][j], i, j) ; 
       		record = strtok(NULL,",");
       		j++;
@@ -226,7 +228,7 @@ int main(int argc, char *argv[]){
    		csvMat[2*i+1]=csvmat_read[i][1];
    }
 
-   //for(int j=0;j<numBox*2;j++){printf("csvmat[%d]:%lld\n",j,csvMat[j]);};
+   for(int j=0;j<numBox*2;j++){printf("csvmat[%d]:%llu\n",j,csvMat[j]);};
 
  ///////////////////////////////////////////
 ////////////some varibles///////////////////
@@ -251,11 +253,13 @@ int main(int argc, char *argv[]){
 
    result_matrix= (int*) malloc(M*box_col*sizeof(int));// this is to store the decimal which is transformed from the 8 digits
    if(result_matrix == NULL){ printf("Fail to melloc result_matrix\n\n"); exit(EXIT_FAILURE); }
-   printf("%d\n",M*box_col);
+   //printf("%d\n",M*box_col);
 
    result_xor= (int*) malloc(M*sizeof(int));
    if(result_xor == NULL){ printf("Fail to melloc result_xor\n\n"); exit(EXIT_FAILURE); }
 
+   Mat temp = Mat(M, N, CV_8UC1, p);
+   //printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
 
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
@@ -265,34 +269,42 @@ int main(int argc, char *argv[]){
    int flag2=0;
    int swap[256];
    for(int i=0;i<256;i++){
-   	swap[i]=0;
+   		swap[i]=0;
    }
+
    	for(int j=0;j<N;j++){
-   		for(int i=j;i<M;i++){//swap from this line
-   			if(result_xor[j]==row_xor[i] && swap[j]!=1){// if find the targets, then swap
-   				//swap[i]=1;	
+   		for(int i=0;i<M;i++){//swap from this line
+   			if(result_xor[j]==row_xor[i] && swap[i]==0){// if find the targets, then swap	
+   				swap[i]=1;
+   				Mat M1 = temp.row(j);
+   				image.row(i).copyTo(M1);
    				flag1++;
-   				swap_row(j,i, p, M);
+   				//swap_row(j,i, p, M);
    				//printf("has swaped column %d and %d and the result_xor is %d the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
-   				//break;
+   				break;
    			}
    		}
    	}	
+   	//printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
+
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the column, which is the csvmat[][1]/////////////////////
-   for(int i=0;i<256;i++){
-   	swap[i]=0;
-   }
+    for(int i=0;i<256;i++){
+   		swap[i]=0;
+    }	
+
    checkbox_binary_column(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
    get_xor(result_xor,result_matrix,box_col,M);
    	for(int j=0;j<N;j++){
-   		for(int i=j;i<M;i++){//swap from this line
-   			if(result_xor[j]==col_xor[i] && swap[j]!=1){// if find the targets, then swap
-   				//swap[i]=1;
+   		for(int i=0;i<M;i++){//swap from this line
+   			if(result_xor[j]==col_xor[i] && swap[i]==0){// if find the targets, then swap
+   				swap[i]=1;
    				flag2++;
-   				swap_column(j,i, p, M);
+   				Mat M2 = image.col(j);
+   				temp.col(i).copyTo(M2);
+   				//swap_column(j,i, p, M);
    				//printf("has swaped row %d and %dand the result_xor is %d the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
-   				//break;
+   				break;
    			}
    		}
    	}	
@@ -300,13 +312,13 @@ int main(int argc, char *argv[]){
 	
 
 ////////////////////////////
-   	row_xor = rowXOR(p, M);
-	col_xor = colXOR(p, M);
+   	//row_xor = rowXOR(p, M);
+	//col_xor = colXOR(p, M);
 	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
 	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
-   	image.data=p; // output the new image data
+   	//image.data=p; // output the new image data
 	// Display the output image:
-	Mat result = Mat(M, N, CV_8UC1, p);
+	Mat result = Mat(M, N, CV_8UC1, image.data);
 	// and save it to disk:
 	string output_filename = "new.png";
 	if (!imwrite(output_filename, result)) {
