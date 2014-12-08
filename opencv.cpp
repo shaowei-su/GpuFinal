@@ -70,16 +70,16 @@ void swap_column(int present_column, int target_column,uchar *p, int N){
 void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,long long *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
-			printf("decimal to binary: %lld\n",csvMat[i*2+1+x*box_col*2]);
+			//printf("decimal to binary: %lld\n",csvMat[i*2+1+x*box_col*2]);
 			decimal_to_binary(csvMat[i*2+1+x*box_col*2],bits_size,binary);
 			for(int k=0;k<boxSize;k++){
 				int result=0;
 				for(int z=0;z<8;z++){//change the binary to the decimal to XOR
    					result=result+binary[z+k*8]*pow(2,7-z);
-   					printf("result is:%d\n",result);
+   					//printf("result is:%d\n",result);
    				}
    				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
-   				printf("checkbox row result %d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
+   				//printf("checkbox row result %d: result_matrix[%d] = %lld\n",x*256+8*i+k,k*box_col+i+boxSize*x*box_col,result_matrix[k*box_col+i+4*x*box_col]);
    			}
 		}
 	}	
@@ -104,8 +104,8 @@ void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binar
 void get_xor(long long *result_xor,long long *result_matrix,int box_col, int M){
 	for(int j=0;j<M;j++){
    		for(int i=0+j*box_col;i<box_col-1+j*box_col;i++){
-   	   		result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decial of the row or column
-   	   		//printf("result_matrix %d is %lld\n",i,result_matrix[i+1]);
+   	   		result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decimal of the row or column
+   	   		//printf("result_matrix %d is %lld\n",i+1,result_matrix[i+1]);
    		}
    		result_xor[j] = result_matrix[box_col-1+j*box_col];//get the last one, which is the final result of the XOR
    		//printf("xor of the row or column %d is %lld\n",j,result_xor[j]);	
@@ -189,8 +189,8 @@ int main(int argc, char *argv[]){
 	uchar *p = image.data;
 	row_xor = rowXOR(p, M);
 	col_xor = colXOR(p, M);
-	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
+	for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
+	for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
 
     char buffer[1024] ;
     char *record,*line;
