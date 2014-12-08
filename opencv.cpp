@@ -77,7 +77,7 @@ void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,l
    					result=result+binary[z+k*8]*pow(2,7-z);
    				}
    				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
-   				//printf("checkbox row result%d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
+   				printf("checkbox row result%d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
    			}
 		}
 	}	
@@ -93,7 +93,7 @@ void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binar
    					result=result+binary[z+k*8]*pow(2,7-z);
    				}
    				result_matrix[i*box_col*boxSize+x+k*box_col]=result;//i*box_col*boxSize+x+k*box_col//k*box_col+i+boxSize*x*box_col
-   				//printf("checkbox column result %d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
+   				//printf("checkbox column result %d: %lld\n",x*256+boxSize*i+k,result_matrix[k*box_col+i+4*x*box_col]);
    			}
 		}
 	}	
@@ -188,12 +188,13 @@ int main(int argc, char *argv[]){
 	row_xor = rowXOR(p, M);
 	col_xor = colXOR(p, M);
 	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
+	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
 
     char buffer[1024] ;
     char *record,*line;
     i = 0;
     j = 0;
+    long long csvmat_read[numBox][2];
     long long csvMat[numBox*2];
 
 /////////////////checkbox load/////////////////////////////////////////
@@ -205,17 +206,24 @@ int main(int argc, char *argv[]){
     }
     while((line=fgets(buffer,sizeof(buffer),fstream))!=NULL)
     {	
-    	
+    	j=0;
       	record = strtok(line,",");
       	while(record != NULL)
       	{ 
-      		csvMat[i] = atoll(record) ;
-      		//printf("record : %lld at %d, %d \n", csvMat[i][j], i, j) ; 
+      		csvmat_read[i][j] = atoll(record) ;
+      		//printf("record : %lld at %d, %d \n", csvmat_read[i][j], i, j) ; 
       		record = strtok(NULL,",");
-      		j++ ;
+      		j++;
       	}
       	++i ;
    }
+
+   for(int i=0;i<numBox;i=i+1){
+   		csvMat[2*i]=csvmat_read[i][0];
+   		csvMat[2*i+1]=csvmat_read[i][1];
+   }
+
+   //for(int j=0;j<numBox*2;j++){printf("csvmat[%d]:%lld\n",j,csvMat[j]);};
 
  ///////////////////////////////////////////
 ////////////some varibles///////////////////
@@ -253,7 +261,7 @@ int main(int argc, char *argv[]){
    		for(int i=j;i<M;i++){//swap from this line
    			if(result_xor[j]==row_xor[i]){// if find the targets, then swap
    				swap_row(j,i, p, M);
-   				printf("has swaped column %d and %d and the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
+   				//printf("has swaped column %d and %d and the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
    				break;
    			}
    		}
@@ -266,7 +274,7 @@ int main(int argc, char *argv[]){
    		for(int i=j;i<M;i++){//swap from this line
    			if(result_xor[j]==col_xor[i]){// if find the targets, then swap
    				swap_column(j,i, p, M);
-   				printf("has swaped row %d and %dand the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
+   				//printf("has swaped row %d and %dand the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
    				break;
    			}
    		}
@@ -277,7 +285,7 @@ int main(int argc, char *argv[]){
    	row_xor = rowXOR(p, M);
 	col_xor = colXOR(p, M);
 	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
+	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
    	image.data=p; // output the new image data
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, p);
