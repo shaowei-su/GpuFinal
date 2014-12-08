@@ -79,7 +79,7 @@ void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,i
    					//printf("result is:%d\n",result);
    				}
    				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
-   				printf("checkbox row result %d: result_matrix[%d] = %d\n",x*256+8*i+k,k*box_col+i+boxSize*x*box_col,result_matrix[k*box_col+i+boxSize*x*box_col]);
+   				//printf("checkbox row result %d: result_matrix[%d] = %d\n",x*256+8*i+k,k*box_col+i+boxSize*x*box_col,result_matrix[k*box_col+i+boxSize*x*box_col]);
    			}
 		}
 	}	
@@ -260,31 +260,39 @@ int main(int argc, char *argv[]){
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
    checkbox_binary_row(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
-   printf("it is right\n");
    get_xor(result_xor,result_matrix,box_col,M);
    int flag1=0;
    int flag2=0;
+   int swap[256];
+   for(int i=0;i<256;i++){
+   	swap[i]=0;
+   }
    	for(int j=0;j<N;j++){
    		for(int i=j;i<M;i++){//swap from this line
-   			if(result_xor[j]==row_xor[i]){// if find the targets, then swap
+   			if(result_xor[j]==row_xor[i] && swap[j]!=1){// if find the targets, then swap
+   				//swap[i]=1;	
    				flag1++;
    				swap_row(j,i, p, M);
    				//printf("has swaped column %d and %d and the result_xor is %d the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
-   				break;
+   				//break;
    			}
    		}
    	}	
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the column, which is the csvmat[][1]/////////////////////
+   for(int i=0;i<256;i++){
+   	swap[i]=0;
+   }
    checkbox_binary_column(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
    get_xor(result_xor,result_matrix,box_col,M);
    	for(int j=0;j<N;j++){
    		for(int i=j;i<M;i++){//swap from this line
-   			if(result_xor[j]==col_xor[i]){// if find the targets, then swap
+   			if(result_xor[j]==col_xor[i] && swap[j]!=1){// if find the targets, then swap
+   				//swap[i]=1;
    				flag2++;
    				swap_column(j,i, p, M);
    				//printf("has swaped row %d and %dand the result_xor is %d the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
-   				break;
+   				//break;
    			}
    		}
    	}	
