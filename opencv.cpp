@@ -63,7 +63,7 @@ void swap_column(int present_column, int target_column,uchar *p, int N){
 	for(i=0;i<N;i++){
 		temp=p[present_column+i*N];
 		p[present_column+i*N]=p[target_column+i*N];
-		p[present_column+i*N]=temp;
+		p[target_column+i*N]=temp;
 	}	
 }	
 
@@ -86,13 +86,13 @@ void checkbox_binary_row(long long *csvMat,int boxSize,int box_col,int *binary,l
 void checkbox_binary_column(long long *csvMat,int boxSize,int box_col,int *binary,long long *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
-			decimal_to_binary(csvMat[x*2+i*box_col*2],bits_size,binary);
+			decimal_to_binary(csvMat[i*2+x*box_col*2],bits_size,binary);//i*2+x*box_col*2//x*2+i*box_col*2
 			for(int k=0;k<boxSize;k++){
 				int result=0;
 				for(int z=0;z<8;z++){//change the binary to the decimal to XOR
    					result=result+binary[z+k*8]*pow(2,7-z);
    				}
-   				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
+   				result_matrix[i*box_col*boxSize+x+k*box_col]=result;//i*box_col*boxSize+x+k*box_col//k*box_col+i+boxSize*x*box_col
    				//printf("checkbox column result %d: %lld\n",x*256+8*i+k,result_matrix[k*box_col+i+4*x*box_col]);
    			}
 		}
@@ -187,8 +187,8 @@ int main(int argc, char *argv[]){
 	uchar *p = image.data;
 	row_xor = rowXOR(p, M);
 	col_xor = colXOR(p, M);
-	for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
+	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
+	for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
 
     char buffer[1024] ;
     char *record,*line;
@@ -253,7 +253,7 @@ int main(int argc, char *argv[]){
    		for(int i=j;i<M;i++){//swap from this line
    			if(result_xor[j]==row_xor[i]){// if find the targets, then swap
    				swap_row(j,i, p, M);
-   				//printf("has swaped column %d and %d and the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
+   				printf("has swaped column %d and %d and the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],row_xor[i]);
    				break;
    			}
    		}
@@ -266,7 +266,7 @@ int main(int argc, char *argv[]){
    		for(int i=j;i<M;i++){//swap from this line
    			if(result_xor[j]==col_xor[i]){// if find the targets, then swap
    				swap_column(j,i, p, M);
-   				//printf("has swaped row %d and %dand the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
+   				printf("has swaped row %d and %dand the result_xor is %lld the row_xor is %d\n",j,i,result_xor[j],col_xor[i]);
    				break;
    			}
    		}
@@ -276,8 +276,8 @@ int main(int argc, char *argv[]){
 ////////////////////////////
    	row_xor = rowXOR(p, M);
 	col_xor = colXOR(p, M);
-	for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
+	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
+	for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
    	image.data=p; // output the new image data
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, p);
