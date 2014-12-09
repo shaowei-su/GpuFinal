@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <iostream>
 #include <sstream>
-#include <sys/time.h>
 
 using namespace cv;
 
@@ -217,12 +216,6 @@ int main(int argc, char *argv[]){
    Mat temp = Mat(M, N, CV_8UC1, temp_image);
    //printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
 
-    struct 		timeval tt;
-    double         ST, ET;               // Local Start and num_times for this thread
-    long           TE;                   // Local Time Elapsed for this thread
-    
-    gettimeofday(&tt, NULL);// get the time before the calculation
-    ST = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
    checkbox_binary_row(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
@@ -268,11 +261,6 @@ int main(int argc, char *argv[]){
    		}
    	}	
    	printf("%d, %d \n",flag1,flag2);
-//////////////////////////////////////
-    gettimeofday(&tt, NULL);// get the time after the calculation
-    ET = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
-    TE = (long) (ET-ST); // calculate the total calculating time
-    printf(" unscramble the image in %ld ms\n\n", TE); // display the total calculating time
 	
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
