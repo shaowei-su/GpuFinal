@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
-#include <iostream>
-#include <sstream>
+//#include <iostream>
+//#include <sstream>
 #include <sys/time.h>
 
 using namespace cv;
@@ -279,7 +279,7 @@ int main(int argc, char *argv[]){
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, image.data);
 	// and save it to disk:
-	string output_filename = "new.png";
+	string output_filename = "unscramble.png";
 	if (!imwrite(output_filename, result)) {
 		fprintf(stderr, "couldn't write output to disk!\n");
 		exit(EXIT_FAILURE);
@@ -292,5 +292,5 @@ int main(int argc, char *argv[]){
 	free(result_matrix);
 	free(result_xor);
 	free(temp_image);
-	return 1;
+	exit(EXIT_SUCCESS);
 }
