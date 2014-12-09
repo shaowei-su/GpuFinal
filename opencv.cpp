@@ -37,16 +37,7 @@ void decimal_to_binary(uint64_t decimal, int bits_size, int *binary){
 		}
 	  }			
 }
-////////////////////////////////
-/*int binary_to_decimal(int bits_size,int *binary){
-	int i=0;
-	int result=0;
-	for(i;i<8;i++){
-		result=result+binary[i]*pow(2,i);
-	}
-	return result;
-}*/
-
+/*
 void swap_row(int present_row, int target_row,uchar *p, int M){
 	int i;
 	int temp;
@@ -65,7 +56,7 @@ void swap_column(int present_column, int target_column,uchar *p, int N){
 		p[present_column+i*N]=p[target_column+i*N];
 		p[target_column+i*N]=temp;
 	}	
-}	
+}*/	
 
 void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
@@ -226,7 +217,7 @@ int main(int argc, char *argv[]){
    		csvMat[2*i+1]=csvmat_read[i][1];
    }
 
-   for(int j=0;j<numBox*2;j++){printf("csvmat[%d]:%llu\n",j,csvMat[j]);};
+   //for(int j=0;j<numBox*2;j++){printf("csvmat[%d]:%llu\n",j,csvMat[j]);};
 
  ///////////////////////////////////////////
 ////////////some varibles///////////////////
@@ -256,7 +247,11 @@ int main(int argc, char *argv[]){
    result_xor= (int*) malloc(M*sizeof(int));
    if(result_xor == NULL){ printf("Fail to melloc result_xor\n\n"); exit(EXIT_FAILURE); }
 
-   Mat temp = Mat(M, N, CV_8UC1, p);
+   uchar *temp_image;
+   temp_image=(uchar*) malloc(M*N*sizeof(uchar));
+   if(temp_image == NULL){ printf("Fail to melloc p\n\n"); exit(EXIT_FAILURE); }
+
+   Mat temp = Mat(M, N, CV_8UC1, temp_image);
    //printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
 
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
