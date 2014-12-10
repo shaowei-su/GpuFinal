@@ -23,15 +23,16 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
 //decimal to binary function
 __device__ void decimal_to_binary(uint64_t decimal, int bits_size, int *binary){
 	int digit;
-	int n=bits_size-1;
-	  for (bits_size=n; bits_size >= 0; bits_size--)
+  int bits_input = bits_size;
+	int n=bits_input-1;
+	  for (bits_input=n; bits_input >= 0; bits_input--)
 	  {
-	    digit = decimal >> bits_size;// csv_number is the number	 
+	    digit = decimal >> bits_input;// csv_number is the number	 
 	    if (digit & 1){
-		  binary[n-bits_size]=1;
+		  binary[n-bits_input]=1;
 		}
 	    else{
-		  binary[n-bits_size]=0;
+		  binary[n-bits_input]=0;
 		}
 	  }			
 }
@@ -295,6 +296,11 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "cudaDeviceReset failed!\n");
     exit(EXIT_FAILURE);
   } 
+/////////////////////////////////////////////////////////////////////////////////////////  
+
+  for(int i=0;i<M*box_col;i++){
+    printf("%d \n",result_matrix_col[i]);
+  }  
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
    //checkbox_binary_row(csvMat,boxSize,box_col,binary,result_matrix_row,bits_size);

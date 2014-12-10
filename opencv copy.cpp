@@ -17,22 +17,38 @@ int numBox;
 int boxSize;
 int box_col; // equals to the box_row
 
+//decimal to binary function
+void decimal_to_binary(uint64_t decimal, int bits_size, int *binary){
+	int digit;
+	int n=bits_size-1;
+	  for (bits_size=n; bits_size >= 0; bits_size--)
+	  {
+	    digit = decimal >> bits_size;// csv_number is the number
+	 
+	    if (digit & 1){
+		  binary[n-bits_size]=1;
+		}
+
+	    else{
+		  binary[n-bits_size]=0;
+		}
+	  }			
+}
+
 void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
 			//printf("row decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+1+x*box_col*2]);
-      uint64_t temp1 = csvMat[i*2+1+x*box_col*2];
-      //printf("%llu shift 8 is %llu and shift 8 left is %llu \n",csvMat[i*2+1+x*box_col*2],temp1,temp3);
-
+			decimal_to_binary(csvMat[i*2+1+x*box_col*2],bits_size,binary);
 			for(int k=0;k<boxSize;k++){
 				int result=0;
-        uint64_t temp2 = temp1>>8;
-        uint64_t temp3 = temp2<<8;
-        result = temp1 - temp3;
-        temp1 = csvMat[i*2+1+x*box_col*2]>>8*(k+1);
-   				result_matrix[(boxSize-1-k)*box_col+i+boxSize*x*box_col]=result;
-          //printf("checkbox row result %d: result_matrix[%d] = %d\n",x*256+8*i+k,(boxSize-1-k)*box_col+i+boxSize*x*box_col,result_matrix[(boxSize-1-k)*box_col+i+boxSize*x*box_col]);
-   		}
+				for(int z=0;z<8;z++){//change the binary to the decimal to XOR
+   					result=result+binary[z+k*8]*pow(2,7-z);
+   					//printf("result is:%d\n",result);
+   				}
+   				result_matrix[k*box_col+i+boxSize*x*box_col]=result;
+   				//printf("checkbox row result %d: result_matrix[%d] = %d\n",x*256+8*i+k,k*box_col+i+boxSize*x*box_col,result_matrix[k*box_col+i+boxSize*x*box_col]);
+   			}
 		}
 	}	
 }
@@ -41,14 +57,14 @@ void checkbox_binary_column(uint64_t *csvMat,int boxSize,int box_col,int *binary
 	for(int x=0;x<box_col;x++){	
 		for(int i=0;i<box_col;i=i+1){
 			//printf("col decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+x*box_col*2]);
-      uint64_t temp1 = csvMat[i*2+x*box_col*2];
+			decimal_to_binary(csvMat[i*2+x*box_col*2],bits_size,binary);//i*2+x*box_col*2//x*2+i*box_col*2
 			for(int k=0;k<boxSize;k++){
 				int result=0;
-        uint64_t temp2 = temp1>>8;
-        uint64_t temp3 = temp2<<8;
-        result = temp1 - temp3;
-        temp1 = csvMat[i*2+x*box_col*2]>>8*(k+1);        
-   			result_matrix[i*box_col*boxSize+x+(boxSize-1-k)*box_col]=result;//i*box_col*boxSize+x+k*box_col//k*box_col+i+boxSize*x*box_col
+				for(int z=0;z<8;z++){//change the binary to the decimal to XOR
+   					result=result+binary[z+k*8]*pow(2,7-z);
+   				}
+   				result_matrix[i*box_col*boxSize+x+k*box_col]=result;//i*box_col*boxSize+x+k*box_col//k*box_col+i+boxSize*x*box_col
+   				//printf("checkbox column result %d: %d\n",x*256+boxSize*i+k,result_matrix[k*box_col+i+boxSize*x*box_col]);
    			}
 		}
 	}	
