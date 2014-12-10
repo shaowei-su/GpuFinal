@@ -18,19 +18,52 @@ int numBox;
 int boxSize;
 int box_col; // equals to the box_row
 
-cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes);
+cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes);
 
 
 __global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,int M,int *GPU_result_matrix_row,int *GPU_result_matrix_col){
     int x = blockIdx.x;
     int i=  threadIdx.x; 
-    //int id = blockIdx.x * blockDim.x + threadIdx.x;
+    //int id = blockIdx.x * blockDim.x + threadIdx.x;   
+}
+/*
+void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *result_matrix){
+  for(int x=0;x<box_col;x++){ 
+    for(int i=0;i<box_col;i=i+1){
+      //printf("row decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+1+x*box_col*2]);
+      uint64_t temp1 = csvMat[i*2+1+x*box_col*2];
+      //printf("%llu shift 8 is %llu and shift 8 left is %llu \n",csvMat[i*2+1+x*box_col*2],temp1,temp3);
 
-    
+      for(int k=0;k<boxSize;k++){
+        int result=0;
+        uint64_t temp2 = temp1>>8;
+        uint64_t temp3 = temp2<<8;
+        result = temp1 - temp3;
+        temp1 = csvMat[i*2+1+x*box_col*2]>>8*(k+1);
+          result_matrix[(boxSize-1-k)*box_col+i+boxSize*x*box_col]=result;
+          //printf("checkbox row result %d: result_matrix[%d] = %d\n",x*256+8*i+k,(boxSize-1-k)*box_col+i+boxSize*x*box_col,result_matrix[(boxSize-1-k)*box_col+i+boxSize*x*box_col]);
+      }
+    }
+  } 
 }
 
-
-
+void checkbox_binary_column(uint64_t *csvMat,int boxSize,int box_col,int *result_matrix){
+  for(int x=0;x<box_col;x++){ 
+    for(int i=0;i<box_col;i=i+1){
+      //printf("col decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+x*box_col*2]);
+      uint64_t temp1 = csvMat[i*2+x*box_col*2];
+      for(int k=0;k<boxSize;k++){
+        int result=0;
+        uint64_t temp2 = temp1>>8;
+        uint64_t temp3 = temp2<<8;
+        result = temp1 - temp3;
+        temp1 = csvMat[i*2+x*box_col*2]>>8*(k+1);        
+        result_matrix[i*box_col*boxSize+x+(boxSize-1-k)*box_col]=result;//i*box_col*boxSize+x+k*box_col//k*box_col+i+boxSize*x*box_col
+        }
+    }
+  } 
+}
+*/
 void get_xor(int *result_xor,int *result_matrix,int box_col, int M){
 	for(int j=0;j<M;j++){
    		for(int i=0+j*box_col;i<box_col-1+j*box_col;i++){
@@ -193,7 +226,7 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "launch_unscramble failed!\n");
     exit(EXIT_FAILURE);
   }
-  
+
   printf("-----------------------------------------------------------------\n");
   printf("Tfr CPU->GPU = %5.2f ms ... \nExecution = %5.2f ms ... \nTfr GPU->CPU = %5.2f ms   \n Total=%5.2f ms\n",
       GPURuntimes[1], GPURuntimes[2], GPURuntimes[3], GPURuntimes[0]);
@@ -221,7 +254,7 @@ int main(int argc, char *argv[]){
    for(int i=0;i<256;i++){
    		swap[i]=0;
    }
-   
+
    	for(int j=0;j<N;j++){
    		for(int i=0;i<M;i++){//swap from this line
    			if(result_xor_row[j]==row_xor[i] && swap[i]==0){// if find the targets, then swap	
@@ -273,6 +306,7 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "couldn't write output to disk!\n");
 		exit(EXIT_FAILURE);
 	}
+
 	printf("Saved image '%s', size = %dx%d (dims = %d).\n", output_filename.c_str(), result.rows, result.cols, result.dims);
 
 	free(row_xor);
