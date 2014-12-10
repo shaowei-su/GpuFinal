@@ -22,7 +22,8 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
 __global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,int M,int *GPU_result_matrix_row,int *GPU_result_matrix_col,int *GPU_result_xor_row,int *GPU_result_xor_col){
     int x = blockIdx.x;
     int i=  threadIdx.x; 
-    //int tid = blockIdx.x * blockDim.x + threadIdx.x;   
+    int k = 0;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x; 
     if(i<box_col){   
       uint64_t temp1 = GPU_csvMat[i*2+1+x*box_col*2];
       for(int k=0;k<boxSize;k++){
@@ -35,7 +36,7 @@ __global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,i
       }    
     }
 
-    if(i>=box_col){
+    if(i>=box_col&&i<2*box_col){
       uint64_t temp4 = GPU_csvMat[(i-box_col)*2+x*box_col*2];
       for(int k=0;k<boxSize;k++){
         int result=0;
@@ -47,15 +48,29 @@ __global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,i
         }  
     }    
     __syncthreads();   
+
+    if(tid<M){
+      for(k=0;k<box_col-1;k++){ 
+          GPU_result_matrix_row[k+1+tid*box_col]=GPU_result_matrix_row[k+tid*box_col]^GPU_result_matrix_row[k+1+tid*box_col];  
+          GPU_result_matrix_col[k+1+tid*box_col]=GPU_result_matrix_col[k+tid*box_col]^GPU_result_matrix_col[k+1+tid*box_col];      
+      }  
+        
+      GPU_result_xor_row[tid] = GPU_result_matrix_row[box_col-1+tid*box_col];
+      GPU_result_xor_col[tid] = GPU_result_matrix_col[box_col-1+tid*box_col];
+    }  
+    __syncthreads();
+    
+
+
 }
 
 void get_xor(int *result_xor,int *result_matrix,int box_col, int M){
-	for(int j=0;j<M;j++){
-   		for(int i=0+j*box_col;i<box_col-1+j*box_col;i++){
-   	   		result_matrix[i+1]=result_matrix[i]^result_matrix[i+1];//XOR every decimal of the row or column
+	for(int x=0;x<M;x++){
+   		for(int i=0;i<box_col-1;i++){
+   	   		result_matrix[i+1+x*box_col]=result_matrix[i+x*box_col]^result_matrix[i+1+x*box_col];//XOR every decimal of the row or column
    	   		//printf("result_matrix %d is %d\n",i+1,result_matrix[i+1]);
    		}
-   		result_xor[j] = result_matrix[box_col-1+j*box_col];//get the last one, which is the final result of the XOR
+   		result_xor[x] = result_matrix[box_col-1+x*box_col];//get the last one, which is the final result of the XOR
    		//printf("xor of the row or column %d is %d\n",j,result_xor[j]);	
    	}	
 }
@@ -225,14 +240,18 @@ int main(int argc, char *argv[]){
     exit(EXIT_FAILURE);
   } 
 /////////////////////////////////////////////////////////////////////////////////////////  
-
-/*  for(int i=0;i<M*box_col;i++){
+/*
+  for(int i=0;i<M*box_col;i++){
     printf("%d \n",result_matrix_row[i]);
   }  */
+/*    
+  for(int i=0;i<M;i++){
+    printf("%d \n",result_matrix_row[box_col-1+i*box_col]);
+  }  */  
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
    //checkbox_binary_row(csvMat,boxSize,box_col,result_matrix_row);
-   get_xor(result_xor_row,result_matrix_row,box_col,M);
+   //get_xor(result_xor_row,result_matrix_row,box_col,M);
    int flag1=0;
    int flag2=0;
    int swap[256];
@@ -261,7 +280,7 @@ int main(int argc, char *argv[]){
     }	
 
    //checkbox_binary_column(csvMat,boxSize,box_col,result_matrix_col);
-   get_xor(result_xor_col,result_matrix_col,box_col,M);
+   //get_xor(result_xor_col,result_matrix_col,box_col,M);
    	for(int j=0;j<N;j++){
    		for(int i=0;i<M;i++){//swap from this line
    			if(result_xor_col[j]==col_xor[i] && swap[i]==0){// if find the targets, then swap
@@ -281,12 +300,15 @@ int main(int argc, char *argv[]){
     TE = (long) (ET-ST); // calculate the total calculating time
     printf(" unscramble the image in %ld ms\n\n", TE); // display the total calculating time
 	
+  /*for(int i=0;i<M;i++){
+    printf("%d \n",result_xor_row[i]);
+  } */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, image.data);
 	// and save it to disk:
-	string output_filename = "new.png";
+	string output_filename = "unscramble.png";
 	if (!imwrite(output_filename, result)) {
 		fprintf(stderr, "couldn't write output to disk!\n");
 		exit(EXIT_FAILURE);
@@ -374,7 +396,7 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   // Launch a kernel on the GPU with one thread for each pixel.
   //threadsPerBlock = dim3(BOX_SIZE, BOX_SIZE);
   //numBlocks = dim3(M / threadsPerBlock.x, N / threadsPerBlock.y);
-  unscramble_kernel<<<box_col, 2*box_col>>>(GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col);
+  unscramble_kernel<<<box_col,M>>>(GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col);
   // Check for errors immediately after kernel launch.
   cudaStatus = cudaGetLastError();
   if (cudaStatus != cudaSuccess)
@@ -394,16 +416,17 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   cudaEventRecord(time3, 0);
 
   // Copy output (results) from GPU buffer to host (CPU) memory.
- /*cudaStatus = cudaMemcpy(result_xor_row, GPU_result_xor_row,  M*sizeof(int), cudaMemcpyDeviceToHost);
+ cudaStatus = cudaMemcpy(result_xor_row, GPU_result_xor_row,  M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
   }
+  
  cudaStatus = cudaMemcpy(result_xor_col, GPU_result_xor_col,  M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
-  }  */
+  }  
   cudaStatus = cudaMemcpy(result_matrix_row, GPU_result_matrix_row,   M*box_col*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
