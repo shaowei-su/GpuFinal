@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+//#include <iostream>
+//#include <sstream>
 #include <sys/time.h>
 
 
@@ -19,13 +21,13 @@ int box_col; // equals to the box_row
 cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes);
 
 
-__global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,int M,int *GPU_result_matrix_row,int *GPU_result_matrix_col,int *GPU_result_xor_row,int *GPU_result_xor_col){
+__global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,int M,int *GPU_result_matrix_row,int *GPU_result_matrix_col){
     int x = blockIdx.x;
     int i=  threadIdx.x; 
-    //int tid = blockIdx.x * blockDim.x + threadIdx.x;   
-    if(i<box_col){   
-      uint64_t temp1 = GPU_csvMat[i*2+1+x*box_col*2];
-      for(int k=0;k<boxSize;k++){
+    //int id = blockIdx.x * blockDim.x + threadIdx.x;   
+
+    uint64_t temp1 = GPU_csvMat[i*2+1+x*box_col*2];
+    for(int k=0;k<boxSize;k++){
         int result=0;
         uint64_t temp2 = temp1>>8;
         uint64_t temp3 = temp2<<8;
@@ -33,20 +35,17 @@ __global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,i
         temp1 = GPU_csvMat[i*2+1+x*box_col*2]>>8*(k+1);
         GPU_result_matrix_row[(boxSize-1-k)*box_col+i+boxSize*x*box_col]=result;
       }    
-    }
-
-    if(i>=box_col){
-      uint64_t temp4 = GPU_csvMat[(i-box_col)*2+x*box_col*2];
+    uint64_t temp4 = GPU_csvMat[i*2+x*box_col*2];
       for(int k=0;k<boxSize;k++){
         int result=0;
         uint64_t temp5 = temp4>>8;
         uint64_t temp6 = temp5<<8;
         result = temp4 - temp6;
-        temp4 = GPU_csvMat[(i-box_col)*2+x*box_col*2]>>8*(k+1);        
-        GPU_result_matrix_col[(i-box_col)*box_col*boxSize+x+(boxSize-1-k)*box_col]=result;
+        temp4 = GPU_csvMat[i*2+x*box_col*2]>>8*(k+1);        
+        GPU_result_matrix_col[i*box_col*boxSize+x+(boxSize-1-k)*box_col]=result;
         }  
-    }    
     __syncthreads();   
+
 }
 
 void get_xor(int *result_xor,int *result_matrix,int box_col, int M){
@@ -225,9 +224,9 @@ int main(int argc, char *argv[]){
     exit(EXIT_FAILURE);
   } 
 /////////////////////////////////////////////////////////////////////////////////////////  
-
-/*  for(int i=0;i<M*box_col;i++){
-    printf("%d \n",result_matrix_row[i]);
+/*
+  for(int i=0;i<M*box_col;i++){
+    printf("%d \n",result_matrix_col[i]);
   }  */
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
@@ -374,7 +373,7 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   // Launch a kernel on the GPU with one thread for each pixel.
   //threadsPerBlock = dim3(BOX_SIZE, BOX_SIZE);
   //numBlocks = dim3(M / threadsPerBlock.x, N / threadsPerBlock.y);
-  unscramble_kernel<<<box_col, 2*box_col>>>(GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col);
+  unscramble_kernel<<<box_col, box_col>>>(GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col);
   // Check for errors immediately after kernel launch.
   cudaStatus = cudaGetLastError();
   if (cudaStatus != cudaSuccess)
@@ -394,7 +393,7 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   cudaEventRecord(time3, 0);
 
   // Copy output (results) from GPU buffer to host (CPU) memory.
- /*cudaStatus = cudaMemcpy(result_xor_row, GPU_result_xor_row,  M*sizeof(int), cudaMemcpyDeviceToHost);
+ /* cudaStatus = cudaMemcpy(result_xor_row, GPU_result_xor_row,  M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
