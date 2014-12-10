@@ -17,7 +17,7 @@ int numBox;
 int boxSize;
 int box_col; // equals to the box_row
 
-void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
+void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *result_matrix){
   for(int x=0;x<box_col;x++){ 
     for(int i=0;i<box_col;i=i+1){
       //printf("row decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+1+x*box_col*2]);
@@ -37,7 +37,7 @@ void checkbox_binary_row(uint64_t *csvMat,int boxSize,int box_col,int *binary,in
   } 
 }
 
-void checkbox_binary_column(uint64_t *csvMat,int boxSize,int box_col,int *binary,int *result_matrix,int bits_size){
+void checkbox_binary_column(uint64_t *csvMat,int boxSize,int box_col,int *result_matrix){
   for(int x=0;x<box_col;x++){ 
     for(int i=0;i<box_col;i=i+1){
       //printf("col decimal to binary[%d]: %lld\n",x*box_col+i,csvMat[i*2+x*box_col*2]);
@@ -177,15 +177,9 @@ int main(int argc, char *argv[]){
 
  ///////////////////////////////////////////
 ////////////some varibles///////////////////
-   int bits_size;
-   bits_size=boxSize*8;//when boxsize==2 then bits_size=16; when boxsize==4, then bits_size=32; when boxsize==8, then bits_size=64
-
-   int *binary;
+ 
    int *result_matrix;  
    int *result_xor;
-
-   binary = (int*) malloc(bits_size*sizeof(int));// this is to store the binary of the box 
-   if(binary == NULL){ printf("Fail to melloc binary\n\n"); exit(EXIT_FAILURE); }
 
    result_matrix= (int*) malloc(M*box_col*sizeof(int));// this is to store the decimal which is transformed from the 8 digits
    if(result_matrix == NULL){ printf("Fail to melloc result_matrix\n\n"); exit(EXIT_FAILURE); }
@@ -209,7 +203,7 @@ int main(int argc, char *argv[]){
     ST = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
-   checkbox_binary_row(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
+   checkbox_binary_row(csvMat,boxSize,box_col,result_matrix);
    get_xor(result_xor,result_matrix,box_col,M);
    int flag1=0;
    int flag2=0;
@@ -237,7 +231,7 @@ int main(int argc, char *argv[]){
       swap[i]=0;
     } 
 
-   checkbox_binary_column(csvMat,boxSize,box_col,binary,result_matrix,bits_size);
+   checkbox_binary_column(csvMat,boxSize,box_col,result_matrix);
    get_xor(result_xor,result_matrix,box_col,M);
     for(int j=0;j<N;j++){
       for(int i=0;i<M;i++){//swap from this line
@@ -272,7 +266,6 @@ int main(int argc, char *argv[]){
 
   free(row_xor);
   free(col_xor);
-  free(binary);
   free(result_matrix);
   free(result_xor);
   free(temp_image);
