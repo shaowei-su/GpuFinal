@@ -16,10 +16,11 @@ int numBox;
 int boxSize;
 int box_col; // equals to the box_row
 
-cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes);
+cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes,int *row_xor,int *col_xor);
 
 
-__global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,int M,int *GPU_result_matrix_row,int *GPU_result_matrix_col,int *GPU_result_xor_row,int *GPU_result_xor_col){
+__global__ void unscramble_kernel(uchar *GPU_image,uint64_t *GPU_csvMat,int boxSize,int box_col,int M,int *GPU_result_matrix_row,int *GPU_result_matrix_col,int *GPU_result_xor_row,int *GPU_result_xor_col,int *GPU_row_xor,int *GPU_col_xor){
+    
     int x = blockIdx.x;
     int i=  threadIdx.x; 
     int k = 0;
@@ -58,23 +59,24 @@ __global__ void unscramble_kernel(uint64_t *GPU_csvMat,int boxSize,int box_col,i
       GPU_result_xor_row[tid] = GPU_result_matrix_row[box_col-1+tid*box_col];
       GPU_result_xor_col[tid] = GPU_result_matrix_col[box_col-1+tid*box_col];
     }  
+
+    if(tid>=M&&tid<2*M){
+      GPU_row_xor[tid-M] = GPU_image[(tid-M)*M];
+      for(k=1;k<M;k++){
+          GPU_row_xor[tid-M]=GPU_row_xor[tid-M]^GPU_image[(tid-M)*M+k];
+      }
+    }
+
+    if(tid>=2*M&&tid<3*M){
+      GPU_col_xor[tid-2*M] = GPU_image[tid-2*M];
+      for(k=1;k<M;k++){
+          GPU_col_xor[tid-2*M]=GPU_col_xor[tid-2*M]^GPU_image[k*M+tid-2*M];
+      }
+    }
     __syncthreads();
     
-
-
 }
-
-void get_xor(int *result_xor,int *result_matrix,int box_col, int M){
-	for(int x=0;x<M;x++){
-   		for(int i=0;i<box_col-1;i++){
-   	   		result_matrix[i+1+x*box_col]=result_matrix[i+x*box_col]^result_matrix[i+1+x*box_col];//XOR every decimal of the row or column
-   	   		//printf("result_matrix %d is %d\n",i+1,result_matrix[i+1]);
-   		}
-   		result_xor[x] = result_matrix[box_col-1+x*box_col];//get the last one, which is the final result of the XOR
-   		//printf("xor of the row or column %d is %d\n",j,result_xor[j]);	
-   	}	
-}
-
+/*
 int *rowXOR(uchar *p, int M){
 
 	int i, j;
@@ -111,7 +113,7 @@ int *colXOR(uchar *p, int M){
 	}
 	return col_xor;
 }
-
+*/
 int main(int argc, char *argv[]){
 	int i, j;
 	int *row_xor, *col_xor;
@@ -148,10 +150,6 @@ int main(int argc, char *argv[]){
 	if(col_xor == NULL){ printf("Fail to melloc \n\n"); exit(EXIT_FAILURE); }
 
 	uchar *p = image.data;
-	row_xor = rowXOR(p, M);
-	col_xor = colXOR(p, M);
-	//for(i=0; i< M; i++) printf("row_xor[%d] = %d\n", i, row_xor[i]);
-	//for(i=0; i< M; i++) printf("col_xor[%d] = %d\n", i, col_xor[i]);
 
     char buffer[1024] ;
     char *record,*line;
@@ -186,9 +184,6 @@ int main(int argc, char *argv[]){
    		csvMat[2*i+1]=csvmat_read[i][1];
    }
 
-   //for(int j=0;j<numBox*2;j++){printf("csvmat[%d]:%llu\n",j,csvMat[j]);};
-
- ///////////////////////////////////////////
 ////////////some varibles///////////////////
    int *result_matrix_row;	
    int *result_matrix_col;
@@ -197,7 +192,7 @@ int main(int argc, char *argv[]){
 
    result_matrix_row= (int*) malloc(M*box_col*sizeof(int));// this is to store the decimal which is transformed from the 8 digits
    if(result_matrix_row == NULL){ printf("Fail to melloc result_matrix_row\n\n"); exit(EXIT_FAILURE); }
-   //printf("%d\n",M*box_col);
+
    result_matrix_col= (int*) malloc(M*box_col*sizeof(int));// this is to store the decimal which is transformed from the 8 digits
    if(result_matrix_col == NULL){ printf("Fail to melloc result_matrix_col\n\n"); exit(EXIT_FAILURE); }
 
@@ -212,16 +207,10 @@ int main(int argc, char *argv[]){
    if(temp_image == NULL){ printf("Fail to melloc p\n\n"); exit(EXIT_FAILURE); }
 
    Mat temp = Mat(M, N, CV_8UC1, temp_image);
-   //printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
 
-    struct 		timeval tt;
-    double         ST, ET;               // Local Start and num_times for this thread
-    long           TE;                   // Local Time Elapsed for this thread
-    
-    gettimeofday(&tt, NULL);// get the time before the calculation
-    ST = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
+
 /////////////////////launch the GPU part////////////////////////
-  cudaStatus = launch_unscramble(p,csvMat,boxSize,box_col,result_matrix_row,result_matrix_col,result_xor_row,result_xor_col,M,GPURuntimes);
+  cudaStatus = launch_unscramble(p,csvMat,boxSize,box_col,result_matrix_row,result_matrix_col,result_xor_row,result_xor_col,M,GPURuntimes,row_xor,col_xor);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "launch_unscramble failed!\n");
     exit(EXIT_FAILURE);
@@ -239,26 +228,13 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "cudaDeviceReset failed!\n");
     exit(EXIT_FAILURE);
   } 
-/////////////////////////////////////////////////////////////////////////////////////////  
-/*
-  for(int i=0;i<M*box_col;i++){
-    printf("%d \n",result_matrix_row[i]);
-  }  */
-/*    
-  for(int i=0;i<M;i++){
-    printf("%d \n",result_matrix_row[box_col-1+i*box_col]);
-  }  */  
-/////////////////load checkbox XOR and XOR every line////////////////////////////////////
-/////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
-   //checkbox_binary_row(csvMat,boxSize,box_col,result_matrix_row);
-   //get_xor(result_xor_row,result_matrix_row,box_col,M);
+////////////////get the unscramble image//////////////////////////////////
    int flag1=0;
    int flag2=0;
    int swap[256];
    for(int i=0;i<256;i++){
    		swap[i]=0;
    }
-
    	for(int j=0;j<N;j++){
    		for(int i=0;i<M;i++){//swap from this line
    			if(result_xor_row[j]==row_xor[i] && swap[i]==0){// if find the targets, then swap	
@@ -271,16 +247,12 @@ int main(int argc, char *argv[]){
    			}
    		}
    	}	
-   	//printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
 
-/////////////////load checkbox XOR and XOR every line////////////////////////////////////
-/////////////////load checkbox for the column, which is the csvmat[][1]/////////////////////
+////////////////get the unscramble image//////////////////////////////////
     for(int i=0;i<256;i++){
    		swap[i]=0;
     }	
 
-   //checkbox_binary_column(csvMat,boxSize,box_col,result_matrix_col);
-   //get_xor(result_xor_col,result_matrix_col,box_col,M);
    	for(int j=0;j<N;j++){
    		for(int i=0;i<M;i++){//swap from this line
    			if(result_xor_col[j]==col_xor[i] && swap[i]==0){// if find the targets, then swap
@@ -294,17 +266,7 @@ int main(int argc, char *argv[]){
    		}
    	}	
    	printf("%d, %d \n",flag1,flag2);
-//////////////////////////////////////
-    gettimeofday(&tt, NULL);// get the time after the calculation
-    ET = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
-    TE = (long) (ET-ST); // calculate the total calculating time
-    printf(" unscramble the image in %ld ms\n\n", TE); // display the total calculating time
-	
-  /*for(int i=0;i<M;i++){
-    printf("%d \n",result_xor_row[i]);
-  } */
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, image.data);
 	// and save it to disk:
@@ -327,7 +289,7 @@ int main(int argc, char *argv[]){
 }
 
 // Helper function for launching a CUDA kernel (including memcpy, timing, etc.):
-cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes)
+cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,int *result_matrix_row,int *result_matrix_col,int *result_xor_row,int *result_xor_col,int M,float* Runtimes,int *row_xor,int *col_xor)
 {
   cudaEvent_t time1, time2, time3, time4;
   uint64_t *GPU_csvMat;
@@ -335,9 +297,9 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   int *GPU_result_matrix_col;
   int *GPU_result_xor_row;
   int *GPU_result_xor_col;
-
-  //dim3 threadsPerBlock;
-  //dim3 numBlocks;
+  uchar *GPU_image;
+  int *GPU_row_xor;
+  int *GPU_col_xor;
 
   // Choose which GPU to run on; change this on a multi-GPU system.
   cudaError_t cudaStatus;
@@ -355,6 +317,11 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   cudaEventRecord(time1, 0);
 
   // Allocate GPU buffer for inputs and outputs:
+  cudaStatus = cudaMalloc((void**)&GPU_image, M*N*sizeof(uchar));
+  if (cudaStatus != cudaSuccess) {
+    fprintf(stderr, "GPU_image cudaMalloc failed!\n");
+    goto Error;
+  }
 
   cudaStatus = cudaMalloc((void**)&GPU_csvMat, 2*box_col*box_col*sizeof(uint64_t));
   if (cudaStatus != cudaSuccess) {
@@ -382,6 +349,16 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
     fprintf(stderr, "GPU_result_xor_col cudaMalloc failed!\n");
     goto Error;
   }
+  cudaStatus = cudaMalloc((void**)&GPU_row_xor, M*sizeof(int));
+  if (cudaStatus != cudaSuccess) {
+    fprintf(stderr, "GPU_row_xor cudaMalloc failed!\n");
+    goto Error;
+  }
+  cudaStatus = cudaMalloc((void**)&GPU_col_xor, M*sizeof(int));
+  if (cudaStatus != cudaSuccess) {
+    fprintf(stderr, "GPU_col_xor cudaMalloc failed!\n");
+    goto Error;
+  }
 
   // Copy input vectors from host memory to GPU buffers.
   cudaStatus = cudaMemcpy(GPU_csvMat, csvMat, 2*box_col*box_col*sizeof(uint64_t), cudaMemcpyHostToDevice);
@@ -389,14 +366,16 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
     fprintf(stderr, "GPU_csvMat cudaMemcpy failed!\n");
     goto Error;
   }
-
+  cudaStatus = cudaMemcpy(GPU_image, p, M*N*sizeof(uchar), cudaMemcpyHostToDevice);
+  if (cudaStatus != cudaSuccess) {
+    fprintf(stderr, "GPU_csvMat cudaMemcpy failed!\n");
+    goto Error;
+  }
 
   cudaEventRecord(time2, 0);
 
-  // Launch a kernel on the GPU with one thread for each pixel.
-  //threadsPerBlock = dim3(BOX_SIZE, BOX_SIZE);
-  //numBlocks = dim3(M / threadsPerBlock.x, N / threadsPerBlock.y);
-  unscramble_kernel<<<box_col,M>>>(GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col);
+  // Launch a kernel on the GPU 
+  unscramble_kernel<<<box_col,M*3>>>(GPU_image,GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col,GPU_row_xor,GPU_col_xor);
   // Check for errors immediately after kernel launch.
   cudaStatus = cudaGetLastError();
   if (cudaStatus != cudaSuccess)
@@ -427,12 +406,12 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
   }  
-  cudaStatus = cudaMemcpy(result_matrix_row, GPU_result_matrix_row,   M*box_col*sizeof(int), cudaMemcpyDeviceToHost);
+  cudaStatus = cudaMemcpy(row_xor, GPU_row_xor,  M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
   }
- cudaStatus = cudaMemcpy(result_matrix_col, GPU_result_matrix_col,   M*box_col*sizeof(int), cudaMemcpyDeviceToHost);
+ cudaStatus = cudaMemcpy(col_xor, GPU_col_xor,   M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
@@ -462,6 +441,9 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   cudaFree(GPU_result_matrix_col);
   cudaFree(GPU_result_xor_row);
   cudaFree(GPU_result_xor_col);
+  cudaFree(GPU_image);
+  cudaFree(GPU_row_xor);
+  cudaFree(GPU_col_xor);
   cudaEventDestroy(time1);
   cudaEventDestroy(time2);
   cudaEventDestroy(time3);
