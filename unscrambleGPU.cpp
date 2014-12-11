@@ -1,3 +1,11 @@
+////////////////////////////////////////ECE 406 Final Project///////////////////////////////////////////////////
+//                                      GPU Version by Renfei Wang and Shaowei Su                             //
+//                                      This program will unscramble the image                                //
+//                                      Please input three arguments                                          //
+//                                      <image filename> <csv filename> <Box size>                            //
+//                                      the BoxSize is 2,4 or 8 according to the csv file                     //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -30,7 +38,7 @@ __global__ void unscramble_kernel(uchar *GPU_image,uint64_t *GPU_csvMat,int boxS
 
     extern __shared__ int sdata_row[];
     extern __shared__ int sdata_col[];
-
+///////////This is calculate the xor of every row in the checkbox/////////////////
     if(i<box_col){   
        temp1 = GPU_csvMat[i*2+1+x*box_col*2];
       for(k=0;k<boxSize;k++){
@@ -42,7 +50,7 @@ __global__ void unscramble_kernel(uchar *GPU_image,uint64_t *GPU_csvMat,int boxS
         GPU_result_matrix_row[(boxSize-1-k)*box_col+i+boxSize*x*box_col]=result;
       }    
     }
-
+///////////This is calculate the xor of every column in the checkbox/////////////////
     if(i>=box_col&&i<2*box_col){
       temp1 = GPU_csvMat[(i-box_col)*2+x*box_col*2];
       for(k=0;k<boxSize;k++){
@@ -55,34 +63,35 @@ __global__ void unscramble_kernel(uchar *GPU_image,uint64_t *GPU_csvMat,int boxS
         }  
     }    
     __syncthreads();   
-
+///////////////This is the xor of each row////////////////////////////////////////
     if(tid<M){
         GPU_result_xor_row[tid]=GPU_result_matrix_row[tid*box_col];
-        //GPU_result_xor_col[tid]=GPU_result_matrix_col[tid];
         for(k=1;k<box_col;k++){ 
           GPU_result_xor_row[tid]=GPU_result_xor_row[tid]^GPU_result_matrix_row[tid*box_col+k];
-          //GPU_result_xor_col[tid]=GPU_result_xor_col[tid]^GPU_result_matrix_col[k*box_col+tid];
       }  
     }  
+///////////////This is the xor of each column////////////////////////////////////////    
     if(tid>=M&&tid<2*M){
       for(k=0;k<box_col-1;k++){
         GPU_result_matrix_col[k+1+(tid-M)*box_col]=GPU_result_matrix_col[k+(tid-M)*box_col]^GPU_result_matrix_col[k+1+(tid-M)*box_col];
       }
       GPU_result_xor_col[tid-M]=GPU_result_matrix_col[box_col-1+(tid-M)*box_col];
     }  
-
+/////////////This is to calculate the xor of row in the scramble image///////////////
     if(tid>=2*M&&tid<3*M){
-      GPU_row_xor[tid-2*M] = GPU_image[(tid-2*M)*M];
+      sdata_row[tid-2*M] = GPU_image[(tid-2*M)*M];
       for(k=0;k<M-1;k++){
-          GPU_row_xor[tid-2*M]=GPU_row_xor[tid-2*M]^GPU_image[(tid-2*M)*M+k+1];
+          sdata_row[tid-2*M]=sdata_row[tid-2*M]^GPU_image[(tid-2*M)*M+k+1];
       }
+      GPU_row_xor[tid-2*M]=sdata_row[tid-2*M];
     }
-
+/////////////This is to calculate the xor of column in the scramble image///////////////
     if(tid>=3*M&&tid<4*M){
-      GPU_col_xor[tid-3*M] = GPU_image[tid-3*M];
+      sdata_col[tid-3*M] = GPU_image[tid-3*M];
       for(k=1;k<M;k++){
-          GPU_col_xor[tid-3*M]=GPU_col_xor[tid-3*M]^GPU_image[k*M+tid-3*M];
+          sdata_col[tid-3*M]=sdata_col[tid-3*M]^GPU_image[k*M+tid-3*M];
       }
+      GPU_col_xor[tid-3*M]=sdata_col[tid-3*M];
     }
     __syncthreads();
 }
@@ -102,7 +111,7 @@ int main(int argc, char *argv[]){
 
 /////////////////////image load/////////////////////////////////////////
 	Mat image;
-	image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
+	image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);//read the image
 	if(! image.data ) {
 		fprintf(stderr, "Could not open the image.\n");
 		exit(EXIT_FAILURE);
@@ -116,7 +125,7 @@ int main(int argc, char *argv[]){
 	numBox = pow(M / boxSize, 2);
 	box_col= M/boxSize;// how many box in one col
 
-///////////////////unscramble image XOR result////////////////////////////
+///////////////////malloc memory for the xor////////////////////////////
 	row_xor = (int*) malloc(M*sizeof(int));
 	if(row_xor == NULL){ printf("Fail to melloc \n\n"); exit(EXIT_FAILURE); }
 	col_xor = (int*) malloc(N*sizeof(int));
@@ -131,7 +140,7 @@ int main(int argc, char *argv[]){
     uint64_t csvmat_read[numBox][2];
     uint64_t csvMat[numBox*2];
 
-/////////////////checkbox load/////////////////////////////////////////
+/////////////////csv file load/////////////////////////////////////////
     FILE *fstream = fopen(argv[2],"r");
     if(fstream == NULL)
     {
@@ -157,7 +166,7 @@ int main(int argc, char *argv[]){
    		csvMat[2*i+1]=csvmat_read[i][1];
    }
 
-////////////some varibles///////////////////
+////////////some varibles and memories malloc///////////////////
    int *result_matrix_row;	
    int *result_matrix_col;
    int *result_xor_row;
@@ -202,7 +211,7 @@ int main(int argc, char *argv[]){
     exit(EXIT_FAILURE);
   } 
 
-////////////////get the unscramble image//////////////////////////////////
+////////////////get the unscramble image, first by row//////////////////////////////////
    int flag1=0;
    int flag2=0;
    int swap[256];
@@ -221,7 +230,7 @@ int main(int argc, char *argv[]){
    			}
    		}
    	}	
-////////////////get the unscramble image//////////////////////////////////
+////////////////get the unscramble image, then by column//////////////////////////////////
     for(int i=0;i<256;i++){
    		swap[i]=0;
     }	
