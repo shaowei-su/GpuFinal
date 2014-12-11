@@ -133,8 +133,7 @@ int main(int argc, char *argv[]){
   if(col_xor == NULL){ printf("Fail to melloc \n\n"); exit(EXIT_FAILURE); }
 
   uchar *p = image.data;
-  row_xor = rowXOR(p, M);
-  col_xor = colXOR(p, M);
+
 
     char buffer[1024] ;
     char *record,*line;
@@ -195,6 +194,8 @@ int main(int argc, char *argv[]){
 
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
+  row_xor = rowXOR(p, M);
+  col_xor = colXOR(p, M);
    checkbox_binary_row(csvMat,boxSize,box_col,result_matrix);
    get_xor(result_xor,result_matrix,box_col,M);
 
