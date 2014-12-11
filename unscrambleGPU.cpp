@@ -24,13 +24,19 @@ __global__ void unscramble_kernel(uchar *GPU_image,uint64_t *GPU_csvMat,int boxS
     int x = blockIdx.x;
     int i=  threadIdx.x; 
     int k = 0;
-    int tid = blockIdx.x * blockDim.x + threadIdx.x; 
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t temp1,temp2,temp3;
+    int result; 
+
+    extern __shared__ int sdata_row[];
+    extern __shared__ int sdata_col[];
+
     if(i<box_col){   
-      uint64_t temp1 = GPU_csvMat[i*2+1+x*box_col*2];
-      for(int k=0;k<boxSize;k++){
-        int result=0;
-        uint64_t temp2 = temp1>>8;
-        uint64_t temp3 = temp2<<8;
+       temp1 = GPU_csvMat[i*2+1+x*box_col*2];
+      for(k=0;k<boxSize;k++){
+        result=0;
+        temp2 = temp1>>8;
+        temp3 = temp2<<8;
         result = temp1 - temp3;
         temp1 = GPU_csvMat[i*2+1+x*box_col*2]>>8*(k+1);
         GPU_result_matrix_row[(boxSize-1-k)*box_col+i+boxSize*x*box_col]=result;
@@ -38,82 +44,49 @@ __global__ void unscramble_kernel(uchar *GPU_image,uint64_t *GPU_csvMat,int boxS
     }
 
     if(i>=box_col&&i<2*box_col){
-      uint64_t temp4 = GPU_csvMat[(i-box_col)*2+x*box_col*2];
-      for(int k=0;k<boxSize;k++){
-        int result=0;
-        uint64_t temp5 = temp4>>8;
-        uint64_t temp6 = temp5<<8;
-        result = temp4 - temp6;
-        temp4 = GPU_csvMat[(i-box_col)*2+x*box_col*2]>>8*(k+1);        
+      temp1 = GPU_csvMat[(i-box_col)*2+x*box_col*2];
+      for(k=0;k<boxSize;k++){
+        result=0;
+        temp2 = temp1>>8;
+        temp3 = temp2<<8;
+        result = temp1 - temp3;
+        temp1 = GPU_csvMat[(i-box_col)*2+x*box_col*2]>>8*(k+1);        
         GPU_result_matrix_col[(i-box_col)*box_col*boxSize+x+(boxSize-1-k)*box_col]=result;
         }  
     }    
     __syncthreads();   
 
     if(tid<M){
-      for(k=0;k<box_col-1;k++){ 
-          GPU_result_matrix_row[k+1+tid*box_col]=GPU_result_matrix_row[k+tid*box_col]^GPU_result_matrix_row[k+1+tid*box_col];  
-          GPU_result_matrix_col[k+1+tid*box_col]=GPU_result_matrix_col[k+tid*box_col]^GPU_result_matrix_col[k+1+tid*box_col];      
+        GPU_result_xor_row[tid]=GPU_result_matrix_row[tid*box_col];
+        //GPU_result_xor_col[tid]=GPU_result_matrix_col[tid];
+        for(k=1;k<box_col;k++){ 
+          GPU_result_xor_row[tid]=GPU_result_xor_row[tid]^GPU_result_matrix_row[tid*box_col+k];
+          //GPU_result_xor_col[tid]=GPU_result_xor_col[tid]^GPU_result_matrix_col[k*box_col+tid];
       }  
-        
-      GPU_result_xor_row[tid] = GPU_result_matrix_row[box_col-1+tid*box_col];
-      GPU_result_xor_col[tid] = GPU_result_matrix_col[box_col-1+tid*box_col];
+    }  
+    if(tid>=M&&tid<2*M){
+      for(k=0;k<box_col-1;k++){
+        GPU_result_matrix_col[k+1+(tid-M)*box_col]=GPU_result_matrix_col[k+(tid-M)*box_col]^GPU_result_matrix_col[k+1+(tid-M)*box_col];
+      }
+      GPU_result_xor_col[tid-M]=GPU_result_matrix_col[box_col-1+(tid-M)*box_col];
     }  
 
-    if(tid>=M&&tid<2*M){
-      GPU_row_xor[tid-M] = GPU_image[(tid-M)*M];
-      for(k=1;k<M;k++){
-          GPU_row_xor[tid-M]=GPU_row_xor[tid-M]^GPU_image[(tid-M)*M+k];
+    if(tid>=2*M&&tid<3*M){
+      GPU_row_xor[tid-2*M] = GPU_image[(tid-2*M)*M];
+      for(k=0;k<M-1;k++){
+          GPU_row_xor[tid-2*M]=GPU_row_xor[tid-2*M]^GPU_image[(tid-2*M)*M+k+1];
       }
     }
 
-    if(tid>=2*M&&tid<3*M){
-      GPU_col_xor[tid-2*M] = GPU_image[tid-2*M];
+    if(tid>=3*M&&tid<4*M){
+      GPU_col_xor[tid-3*M] = GPU_image[tid-3*M];
       for(k=1;k<M;k++){
-          GPU_col_xor[tid-2*M]=GPU_col_xor[tid-2*M]^GPU_image[k*M+tid-2*M];
+          GPU_col_xor[tid-3*M]=GPU_col_xor[tid-3*M]^GPU_image[k*M+tid-3*M];
       }
     }
     __syncthreads();
-    
-}
-/*
-int *rowXOR(uchar *p, int M){
-
-	int i, j;
-	int *row_xor;
-	row_xor = (int*) malloc(M*sizeof(int));
-	if(row_xor == NULL){ printf("Fail to melloc \n\n"); exit(EXIT_FAILURE); }
-
-	for(i=0;i<M;i++){
-		row_xor[i] = p[i*M] ;
-	}
-
-	for(i=0;i<M;i++){
-		for(j=1;j<M;j++){
-			row_xor[i] = row_xor[i] ^ p[i*M+j];
-		}
-	}
-	return row_xor;	
 }
 
-int *colXOR(uchar *p, int M){
-	int i, j;
-	int *col_xor;
-	col_xor = (int*) malloc(M*sizeof(int));
-	if(col_xor == NULL){ printf("Fail to melloc \n\n"); exit(EXIT_FAILURE); }
-
-	for(i=0;i<M;i++){
-		col_xor[i] = p[i] ;
-	}
-
-	for(i=0;i<M;i++){
-		for(j=1;j<M;j++){
-			col_xor[i] = col_xor[i] ^ p[j*M+i];
-		}
-	}
-	return col_xor;
-}
-*/
 int main(int argc, char *argv[]){
 	int i, j;
 	int *row_xor, *col_xor;
@@ -228,6 +201,7 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "cudaDeviceReset failed!\n");
     exit(EXIT_FAILURE);
   } 
+
 ////////////////get the unscramble image//////////////////////////////////
    int flag1=0;
    int flag2=0;
@@ -247,12 +221,10 @@ int main(int argc, char *argv[]){
    			}
    		}
    	}	
-
 ////////////////get the unscramble image//////////////////////////////////
     for(int i=0;i<256;i++){
    		swap[i]=0;
     }	
-
    	for(int j=0;j<N;j++){
    		for(int i=0;i<M;i++){//swap from this line
    			if(result_xor_col[j]==col_xor[i] && swap[i]==0){// if find the targets, then swap
@@ -375,7 +347,7 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   cudaEventRecord(time2, 0);
 
   // Launch a kernel on the GPU 
-  unscramble_kernel<<<box_col,M*3>>>(GPU_image,GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col,GPU_row_xor,GPU_col_xor);
+  unscramble_kernel<<<box_col,M,2*M*sizeof(int)>>>(GPU_image,GPU_csvMat,boxSize,box_col,M,GPU_result_matrix_row,GPU_result_matrix_col,GPU_result_xor_row,GPU_result_xor_col,GPU_row_xor,GPU_col_xor);
   // Check for errors immediately after kernel launch.
   cudaStatus = cudaGetLastError();
   if (cudaStatus != cudaSuccess)
@@ -400,7 +372,7 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
     goto Error;
   }
-  
+ 
  cudaStatus = cudaMemcpy(result_xor_col, GPU_result_xor_col,  M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
     fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
@@ -408,14 +380,25 @@ cudaError_t launch_unscramble(uchar *p,uint64_t *csvMat,int boxSize,int box_col,
   }  
   cudaStatus = cudaMemcpy(row_xor, GPU_row_xor,  M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
-    fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
+    fprintf(stderr, "row_xor cudaMemcpy failed!\n");
     goto Error;
   }
  cudaStatus = cudaMemcpy(col_xor, GPU_col_xor,   M*sizeof(int), cudaMemcpyDeviceToHost);
   if (cudaStatus != cudaSuccess) {
-    fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
+    fprintf(stderr, "row_xor cudaMemcpy failed!\n");
     goto Error;
   }   
+  
+  cudaStatus = cudaMemcpy(result_matrix_row, GPU_result_matrix_row,   M*box_col*sizeof(int), cudaMemcpyDeviceToHost);
+  if (cudaStatus != cudaSuccess) {
+    fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
+    goto Error;
+  }
+ cudaStatus = cudaMemcpy(result_matrix_col, GPU_result_matrix_col,   M*box_col*sizeof(int), cudaMemcpyDeviceToHost);
+  if (cudaStatus != cudaSuccess) {
+    fprintf(stderr, "result_xor_row cudaMemcpy failed!\n");
+    goto Error;
+  }  
 
   cudaEventRecord(time4, 0);
   cudaEventSynchronize(time1);

@@ -201,10 +201,16 @@ int main(int argc, char *argv[]){
     
     gettimeofday(&tt, NULL);// get the time before the calculation
     ST = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
+
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the row, which is the csvmat[][1]/////////////////////
    checkbox_binary_row(csvMat,boxSize,box_col,result_matrix);
+
    get_xor(result_xor,result_matrix,box_col,M);
+
+   /*  for(int i=0;i<M*box_col;i++){
+    printf("result_matrix_row[%d]%d \n",i,result_matrix[i]);
+  }*/
    int flag1=0;
    int flag2=0;
    int swap[256];
@@ -224,6 +230,7 @@ int main(int argc, char *argv[]){
       }
     } 
     //printf("temp data is %d\n and %d\n",temp.data[0],p[0]);
+
 
 /////////////////load checkbox XOR and XOR every line////////////////////////////////////
 /////////////////load checkbox for the column, which is the csvmat[][1]/////////////////////
@@ -251,7 +258,7 @@ int main(int argc, char *argv[]){
     ET = tt.tv_sec*1000.00 + (tt.tv_usec/1000.0);
     TE = (long) (ET-ST); // calculate the total calculating time
     printf(" unscramble the image in %ld ms\n\n", TE); // display the total calculating time
-  
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
   // Display the output image:
