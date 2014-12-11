@@ -246,7 +246,7 @@ int main(int argc, char *argv[]){
    			}
    		}
    	}	
-   	printf("%d, %d \n",flag1,flag2);
+   	//printf("%d, %d \n",flag1,flag2);
 
 	// Display the output image:
 	Mat result = Mat(M, N, CV_8UC1, image.data);
