@@ -1,6 +1,7 @@
 <application>
   <component name="FindRecents">
     <findStrings>
+      <find>iv</find>
       <find>video</find>
     </findStrings>
   </component>
