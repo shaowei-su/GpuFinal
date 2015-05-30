@@ -3,6 +3,11 @@
     <findStrings>
       <find>iv</find>
       <find>video</find>
+      <find>SERVER_URL</find>
+      <find>quality</find>
+      <find>about</find>
+      <find>layout</find>
+      <find>menu</find>
     </findStrings>
   </component>
 </application>
