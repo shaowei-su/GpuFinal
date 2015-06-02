@@ -8,6 +8,8 @@
       <find>about</find>
       <find>layout</find>
       <find>menu</find>
+      <find>openBrowser</find>
+      <find>bindListeners</find>
     </findStrings>
   </component>
 </application>
